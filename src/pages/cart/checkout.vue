@@ -200,6 +200,33 @@ export default {
       this.cart = [];
     }
   },
+
+  async completeOrder() {
+    const orderData = {
+      shipping: this.shipping,
+      payment: this.payment,
+      cart: this.cart,
+      subtotal: this.subtotal,
+      tax: this.tax,
+      total: this.total,
+      date: new Date().toISOString()
+    };
+
+    let orderHistory = JSON.parse(localStorage.getItem('orderHistory')) || [];
+
+    orderHistory.push(orderData);
+
+    localStorage.setItem('orderHistory', JSON.stringify(orderHistory));
+    localStorage.removeItem('userCart');
+    this.cart = [];
+
+    console.log('Order saved to localStorage:', orderData);
+    alert('Order berhasil disimpan!');
+
+    this.$router.push('/cart');
+  }
+
+
 }
 
 

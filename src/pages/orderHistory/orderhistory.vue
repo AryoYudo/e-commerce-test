@@ -119,43 +119,43 @@ export default {
   methods: {
     async fetchOrders() {
       try {
-        const res = await axios.get("https://dummyjson.com/products");
-        this.orders = res.data.products.slice(0, 5).map((p, i) => {
-          const qty = Math.floor(Math.random() * 3) + 1;
-          return {
-            ...p,
+        const savedOrders = JSON.parse(localStorage.getItem('orderHistory')) || [];
+
+        if (savedOrders.length > 0) {
+          this.orders = savedOrders.map((order, i) => ({
             orderId: 1000 + i,
-            date: new Date().toLocaleDateString(),
-            quantity: qty,
-            total: p.price * qty,
-            items: [
-              {
-                name: p.title,
-                qty: qty,
-                price: p.price,
-                total: p.price * qty,
-                image: p.thumbnail
-              }
-            ],
+            date: new Date(order.date).toLocaleDateString(),
+            thumbnail: order.cart[0]?.thumbnail || '',
+            quantity: order.cart.reduce((sum, item) => sum + (item.qty || 1), 0),
+            total: order.total,
+            items: order.cart.map(c => ({
+              name: c.name || c.title,
+              qty: c.qty || 1,
+              price: c.price,
+              total: (c.qty || 1) * c.price,
+              image: c.thumbnail
+            })),
             shipping: {
-              name: "John Doe",
-              address1: "123 Main Street",
-              address2: "City, State ZIP",
-              email: "john@example.com",
-              phone: "+1 234 567 890"
+              name: `${order.shipping.firstName} ${order.shipping.lastName}`,
+              address1: order.shipping.address,
+              address2: `${order.shipping.city}, ${order.shipping.state} ${order.shipping.zip}`,
+              email: order.shipping.email,
+              phone: order.shipping.phone
             }
-          };
-        });
+          }));
+        }
       } catch (err) {
         console.error("Gagal memuat data:", err);
       }
     },
+
     openOrderDetails(order) {
       this.selectedOrder = order;
       const modal = new bootstrap.Modal(document.getElementById("orderModal"));
       modal.show();
     }
   },
+
   mounted() {
     this.fetchOrders();
   }

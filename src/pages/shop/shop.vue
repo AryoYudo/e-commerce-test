@@ -63,6 +63,7 @@
 
 <script>
 import axios from 'axios'
+import Swal from "sweetalert2";
 
 export default {
   name: "Shop",
@@ -137,7 +138,6 @@ export default {
         this.cartProducts.push({ id: product.id, quantity: 1 })
       }
 
-      // Kirim ke API add cart
       try {
         const payload = {
           userId: 1, // Contoh userId tetap 1
@@ -148,13 +148,28 @@ export default {
           headers: { 'Content-Type': 'application/json' }
         })
 
-        // Simpan hasil cart di localStorage biar bisa diambil di halaman Cart
         localStorage.setItem('userCart', JSON.stringify(res.data.products))
 
-        alert('Product added to cart!')
+        Swal.fire({
+          toast: true,
+          position: 'bottom-end',
+          icon: 'success',
+          title: 'Product added to cart!',
+          showConfirmButton: false,
+          timer: 2000,
+          timerProgressBar: true
+        });
+
       } catch (error) {
-        console.error('Add to cart error:', error)
-        alert('Failed to add to cart')
+        Swal.fire({
+            toast: true,
+            position: 'bottom-end',
+            icon: 'error',
+            title: 'Add to cart error:', error,
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true
+        });
       }
     }
   },

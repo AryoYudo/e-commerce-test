@@ -1,6 +1,5 @@
 <template>
   <div class="container-fluid py-4">
-    <!-- Header -->
     <h3 class="fw-bold">Dashboard</h3>
     <p class="text-muted mb-4">Overview of your e-commerce metrics</p>
 
@@ -22,7 +21,7 @@
         <div class="card shadow-sm border-0" style="height: 350px;">
           <div class="card-body d-flex flex-column">
             <h6 class="fw-bold">Products by Category</h6>
-            <p class="text-muted small">Distribution of products across categories</p>
+            <p class="text-muted small">Number of products in each category</p>
             <div class="flex-grow-1">
               <canvas id="barChart" style="height: 100%"></canvas>
             </div>
@@ -34,7 +33,7 @@
         <div class="card shadow-sm border-0" style="height: 350px;">
           <div class="card-body d-flex flex-column">
             <h6 class="fw-bold">Category Distribution</h6>
-            <p class="text-muted small">Pie chart view of product categories</p>
+            <p class="text-muted small">Percentage of products by category</p>
             <div class="flex-grow-1">
               <canvas id="pieChart" style="height: 100%"></canvas>
             </div>
@@ -42,7 +41,6 @@
         </div>
       </div>
     </div>
-    
   </div>
 </template>
 
@@ -77,56 +75,102 @@ export default {
   data() {
     return {
       stats: [
-        { title: "Total Products", value: "194", subtitle: "Available in store" },
-        { title: "Total Users", value: "208", subtitle: "Registered customers" },
-        { title: "Active Carts", value: "50", subtitle: "Items in carts" },
-        { title: "Total Revenue", value: "$589088.80", subtitle: "From all carts" }
+        { title: "Total Products", value: "0", subtitle: "Available in store" },
+        { title: "Total Users", value: "0", subtitle: "Registered customers" },
+        { title: "Active Carts", value: "0", subtitle: "Items in carts" },
+        { title: "Total Revenue", value: "$0.00", subtitle: "From all carts" }
       ]
     };
   },
   mounted() {
-    this.renderBarChart();
-    this.renderPieChart();
+    this.fetchStats();
+    this.fetchProductCharts();
   },
   methods: {
-    renderBarChart() {
+    // Ambil data untuk top cards dari carts API
+    async fetchStats() {
+      try {
+        const res = await fetch("https://dummyjson.com/carts");
+        const data = await res.json();
+
+        const totalProducts = data.carts.reduce((sum, cart) => sum + cart.totalProducts, 0);
+        const totalUsers = new Set(data.carts.map(c => c.userId)).size;
+        const activeCarts = data.carts.length;
+        const totalRevenue = data.carts.reduce((sum, cart) => sum + cart.total, 0);
+
+        this.stats = [
+          { title: "Total Products", value: totalProducts, subtitle: "Available in store" },
+          { title: "Total Users", value: totalUsers, subtitle: "Registered customers" },
+          { title: "Active Carts", value: activeCarts, subtitle: "Items in carts" },
+          { title: "Total Revenue", value: `$${totalRevenue.toFixed(2)}`, subtitle: "From all carts" }
+        ];
+      } catch (err) {
+        console.error(err);
+      }
+    },
+
+    // Ambil data untuk chart dari products API
+    async fetchProductCharts() {
+      try {
+        const res = await fetch("https://dummyjson.com/products");
+        const data = await res.json();
+
+        // Hitung jumlah produk per kategori
+        const categoryMap = {};
+        data.products.forEach(p => {
+          if (!categoryMap[p.category]) {
+            categoryMap[p.category] = 0;
+          }
+          categoryMap[p.category] += 1;
+        });
+
+        const labels = Object.keys(categoryMap);
+        const counts = Object.values(categoryMap);
+
+        this.renderBarChart(labels, counts);
+        this.renderPieChart(labels, counts);
+      } catch (err) {
+        console.error(err);
+      }
+    },
+
+    renderBarChart(labels, counts) {
       new ChartJS(document.getElementById("barChart"), {
         type: "bar",
         data: {
-          labels: ["beauty", "fragrances", "furniture", "groceries"],
+          labels: labels,
           datasets: [{
-            data: [5, 5, 5, 15],
+            data: counts,
             backgroundColor: "#9370DB"
           }]
         },
         options: {
           responsive: true,
-          maintainAspectRatio: false, // Biar tinggi ikut card
+          maintainAspectRatio: false,
           plugins: {
             legend: { display: false }
           }
         }
-
       });
     },
-    renderPieChart() {
+
+    renderPieChart(labels, counts) {
       new ChartJS(document.getElementById("pieChart"), {
         type: "pie",
         data: {
-          labels: ["fragrances 17%", "furniture 17%", "beauty 17%", "groceries 50%"],
+          labels: labels,
           datasets: [{
-            data: [17, 17, 17, 50],
-            backgroundColor: ["#20B2AA", "#FFD700", "#1E90FF", "#FF7F50"]
+            data: counts,
+            backgroundColor: ["#20B2AA", "#FFD700", "#1E90FF", "#FF7F50", "#8A2BE2", "#FF69B4", "#3CB371", "#FFA500"]
           }]
         },
         options: {
           responsive: true,
-          maintainAspectRatio: false, // Biar tinggi ikut card
+          maintainAspectRatio: false,
           plugins: {
             legend: { position: "right" }
           }
         }
-
       });
     }
   }

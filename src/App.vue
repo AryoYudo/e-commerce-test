@@ -1,10 +1,12 @@
 <template>
-  <div class="d-flex">
-    <Sidebar />
-    <div class="main-content" :class="{ shifted: sidebar.collapsed }">
+  <div :class="showSidebar ? 'd-flex' : ''">
+    <Sidebar v-if="showSidebar" />
+    <div
+      class="main-content"
+      :class="[{ shifted: sidebar.collapsed }, !showSidebar ? 'no-sidebar' : '']"
+    >
       <div>
-
-        <ToggleSidebarButton />
+        <ToggleSidebarButton v-if="showSidebar" />
         <router-view />
       </div>
     </div>
@@ -12,11 +14,15 @@
 </template>
 
 <script setup>
+import { computed } from "vue";
+import { useRoute } from "vue-router";
 import { useSidebarStore } from "@/store/sidebar";
 import Sidebar from "@/components/Sidebar.vue";
 import ToggleSidebarButton from "@/components/ToggleSidebarButton.vue";
 
 const sidebar = useSidebarStore();
+const route = useRoute();
+const showSidebar = computed(() => route.name !== "Auth");
 </script>
 
 <style>
@@ -25,7 +31,7 @@ const sidebar = useSidebarStore();
 }
 
 .main-content {
-  position: relative; /* supaya tombol bisa absolute kalau perlu */
+  position: relative;
   padding: 1rem;
   margin-left: 250px;
   transition: margin-left 0.3s ease;
@@ -35,4 +41,12 @@ const sidebar = useSidebarStore();
   margin-left: 60px;
 }
 
+/* Kalau tanpa sidebar, margin dihapus dan centerkan konten */
+.no-sidebar {
+  margin-left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh; /* supaya vertikal center */
+}
 </style>

@@ -79,13 +79,19 @@ export default {
         });
 
         console.log("Login success:", res.data);
+
+        // Simpan token atau flag login
+        localStorage.setItem("token", res.data.token);
+
         alert(`Welcome, ${res.data.firstName} ${res.data.lastName}!`);
-        // Redirect ke dashboard (kalau ada)
-        // this.$router.push("/dashboard");
+
+        // Redirect ke dashboard
+        this.$router.push("/dashboard");
       } catch (err) {
         this.error = "Invalid username or password.";
       }
     }
+
   }
 };
 </script>
