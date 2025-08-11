@@ -6,9 +6,16 @@
 
     <ul class="nav flex-column">
       <li class="nav-item" v-for="item in menuItems" :key="item.text">
-        <a :href="item.link" class="nav-link">
-          <i :class="item.icon"></i>
-          <span v-if="!sidebar.collapsed">{{ item.text }}</span>
+        <a :href="item.link" class="nav-link d-flex align-items-center justify-content-between">
+          <span>
+            <i :class="item.icon"></i>
+            <span v-if="!sidebar.collapsed" class="ms-2">{{ item.text }}</span>
+          </span>
+
+          <!-- Tampilkan badge hanya untuk item Cart -->
+          <span v-if="item.text === 'Cart' && cartCount > 0" class="badge bg-danger rounded-pill ms-2">
+            {{ cartCount }}
+          </span>
         </a>
       </li>
     </ul>
@@ -20,22 +27,46 @@
 </template>
 
 <script>
+import { ref, onMounted } from "vue";
 import { useSidebarStore } from "@/store/sidebar";
 
 export default {
   name: "Sidebar",
   setup() {
     const sidebar = useSidebarStore();
+
     const menuItems = [
       { text: "Dashboard", icon: "bi bi-speedometer2", link: "/dashboard" },
       { text: "Products", icon: "bi bi-box", link: "/product" },
       { text: "Shop", icon: "bi bi-shop", link: "/shop" },
-      { text: "Cart", icon: "bi bi-cart", link: "#" },
+      { text: "Cart", icon: "bi bi-cart", link: "/cart" },
       { text: "Orders", icon: "bi bi-bag-check", link: "#" }
     ];
-    return { sidebar, menuItems };
+
+    const cartCount = ref(0);
+
+    const updateCartCount = () => {
+      const savedCart = localStorage.getItem('userCart');
+      if (savedCart) {
+        const cartProducts = JSON.parse(savedCart);
+        cartCount.value = cartProducts.reduce((acc, p) => acc + p.quantity, 0);
+      } else {
+        cartCount.value = 0;
+      }
+    };
+
+    // langsung panggil supaya langsung muncul
+    updateCartCount();
+
+    onMounted(() => {
+      window.addEventListener('storage', updateCartCount);
+    });
+
+    return { sidebar, menuItems, cartCount };
   }
 };
+
+
 </script>
 
 <style scoped>

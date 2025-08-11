@@ -37,14 +37,11 @@
             -{{ Math.round(product.discountPercentage) }}%
           </span>
 
-          <!-- Image -->
           <img :src="product.thumbnail" class="card-img-top p-3" style="height: 200px; object-fit: contain;" />
 
           <div class="card-body d-flex flex-column">
             <h6 class="card-title mb-1">{{ product.title }}</h6>
             <p class="text-muted small mb-2">{{ truncate(product.description, 50) }}</p>
-
-            <!-- Price -->
             <div class="mb-2">
               <strong>${{ product.price.toFixed(2) }}</strong>
               <span v-if="product.discountPercentage"
@@ -52,13 +49,11 @@
                 ${{ (product.price / (1 - product.discountPercentage / 100)).toFixed(2) }}
               </span>
             </div>
-
-            <!-- Rating & Stock -->
             <div class="text-muted small mb-3">
               ⭐ {{ product.rating }} • {{ product.stock }} in stock
             </div>
 
-            <button class="btn btn-dark mt-auto">🛒 Add to Cart</button>
+            <button class="btn btn-dark mt-auto" @click="addToCart(product)">🛒 Add to Cart</button>
           </div>
         </div>
       </div>
@@ -77,45 +72,45 @@ export default {
       categories: [],
       searchQuery: '',
       selectedCategory: '',
-      sortOption: 'default'
+      sortOption: 'default',
+      cartProducts: [] // Simpan produk yang mau dikirim ke API
     }
   },
   computed: {
-    filteredProducts() {
-      let filtered = [...this.products]
+  filteredProducts() {
+    let filtered = [...this.products]
 
-      // Search
-      if (this.searchQuery) {
-        const q = this.searchQuery.toLowerCase()
-        filtered = filtered.filter(p =>
-          p.title.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q)
-        )
-      }
-
-      // Category
-      if (this.selectedCategory) {
-        filtered = filtered.filter(p => p.category === this.selectedCategory)
-      }
-
-      // Sort
-      switch (this.sortOption) {
-        case 'az':
-          filtered.sort((a, b) => a.title.localeCompare(b.title))
-          break
-        case 'priceLow':
-          filtered.sort((a, b) => a.price - b.price)
-          break
-        case 'priceHigh':
-          filtered.sort((a, b) => b.price - a.price)
-          break
-        case 'rating':
-          filtered.sort((a, b) => b.rating - a.rating)
-          break
-      }
-
-      return filtered
+    // search filter
+    if (this.searchQuery) {
+      const q = this.searchQuery.toLowerCase()
+      filtered = filtered.filter(p =>
+        p.title.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q)
+      )
     }
+
+    if (this.selectedCategory) {
+      filtered = filtered.filter(p => p.category === this.selectedCategory)
+    }
+
+    switch (this.sortOption) {
+      case 'az':
+        filtered.sort((a, b) => a.title.localeCompare(b.title))
+        break
+      case 'priceLow':
+        filtered.sort((a, b) => a.price - b.price)
+        break
+      case 'priceHigh':
+        filtered.sort((a, b) => b.price - a.price)
+        break
+      case 'rating':
+        filtered.sort((a, b) => b.rating - a.rating)
+        break
+    }
+
+    return filtered
+  }
+
   },
   methods: {
     async fetchProducts() {
@@ -131,11 +126,47 @@ export default {
     },
     truncate(str, len) {
       return str.length > len ? str.substring(0, len) + "..." : str
+    },
+
+    async addToCart(product) {
+      // Cek apakah produk sudah ada di cartProducts
+      const existing = this.cartProducts.find(p => p.id === product.id)
+      if (existing) {
+        existing.quantity++
+      } else {
+        this.cartProducts.push({ id: product.id, quantity: 1 })
+      }
+
+      // Kirim ke API add cart
+      try {
+        const payload = {
+          userId: 1, // Contoh userId tetap 1
+          products: this.cartProducts
+        }
+
+        const res = await axios.post('https://dummyjson.com/carts/add', payload, {
+          headers: { 'Content-Type': 'application/json' }
+        })
+
+        // Simpan hasil cart di localStorage biar bisa diambil di halaman Cart
+        localStorage.setItem('userCart', JSON.stringify(res.data.products))
+
+        alert('Product added to cart!')
+      } catch (error) {
+        console.error('Add to cart error:', error)
+        alert('Failed to add to cart')
+      }
     }
   },
   mounted() {
     this.fetchProducts()
     this.fetchCategories()
+
+    // Load cart dari localStorage supaya state konsisten (optional)
+    const savedCart = localStorage.getItem('userCart')
+    if (savedCart) {
+      this.cartProducts = JSON.parse(savedCart).map(p => ({ id: p.id, quantity: p.quantity }))
+    }
   }
 }
 </script>
